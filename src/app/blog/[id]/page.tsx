@@ -171,14 +171,15 @@ export default function ProductPage({
 
       <div className="min-h-screen bg-background mt-5">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col lg:flex-row gap-12">
-            {/* Gallery */}
-            <div className="lg:w-1/2 lg:sticky lg:top-8 lg:self-start">
+          <div className="flex flex-col lg:flex-row gap-12 items-start">
+            {/* Gallery sticky only on desktop */}
+            <div className="lg:w-1/2 lg:sticky lg:top-8 h-fit">
               <Gallery
                 images={(product.images ?? []).filter((img): img is string => Boolean(img))}
                 title={product.title ?? ""}
               />
             </div>
+
 
             {/* Product Info */}
             <div className="lg:w-1/2 space-y-8">
@@ -241,7 +242,7 @@ export default function ProductPage({
               {product.colors?.length ? (
                 <div>
                   <h4 className="font-semibold mb-2">Choose Color</h4>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {product.colors!.map((color, idx) => (
                       <button
                         key={idx}

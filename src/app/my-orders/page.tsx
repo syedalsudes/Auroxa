@@ -151,7 +151,7 @@ export default function MyOrdersPage() {
                     </span>
                     <Link
                       href={`/order-success/${order._id}`}
-                      className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                      className="flex items-center gap-2 bg-blue-500 text-foreground px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
                     >
                       <Eye className="w-4 h-4" />
                       View Details

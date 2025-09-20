@@ -1,54 +1,53 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Gallery({ images, title }: { images: string[], title: string }) {
-    const [mainImage, setMainImage] = useState(images[0]);
+    const [mainImage, setMainImage] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (images && images.length > 0) {
+            setMainImage(images[0]); // client pe safely set karein
+        }
+    }, [images]);
+
+    if (!mainImage) return null; // hydration mismatch prevent karega
 
     return (
-        <div className="flex gap-4">
-            {images.length > 1 && (
-                <div className="flex flex-col gap-3">
-                    {images.map((img, idx) => {
-                        const isActive = mainImage === img;
-                        return (
-                            <div
-                                key={idx}
-                                onMouseEnter={() => setMainImage(img)}
-                                className={`cursor-pointer border rounded-lg overflow-hidden transition-all duration-200 ${
-                                    isActive
-                                        ? "brightness-75"
-                                        : "hover:brightness-75"
-                                }`}
-                                style={{
-                                    width: "70px",
-                                    height: "70px",
-                                }}
-                            >
-                                <Image
-                                    src={img || "/placeholder.svg"}
-                                    alt={`${title} thumbnail ${idx}`}
-                                    width={70}
-                                    height={70}
-                                    className="object-cover w-full h-full"
-                                />
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+        <div className="flex flex-col-reverse md:flex-row gap-4">
+            {/* Thumbnails */}
+            <div className="grid grid-cols-2 gap-3 md:flex md:flex-col md:gap-3">
+                {images.map((img, idx) => (
+                    <div
+                        key={idx}
+                        onMouseEnter={() => setMainImage(img)}
+                        className="cursor-pointer border rounded-lg overflow-hidden transition-all duration-200"
+                    >
+                        <Image
+                            src={img || "/placeholder.svg"}
+                            alt={`${title} thumbnail ${idx}`}
+                            width={70}
+                            height={70}
+                            className="object-cover w-full aspect-square md:w-[70px] md:h-[70px] bg-white"
+                        />
+                    </div>
+                ))}
+            </div>
 
-            {/* Main Image */}
-            <div className="border rounded-lg overflow-hidden flex-shrink-0">
-                <Image
-                    src={mainImage || "/placeholder.svg?height=600&width=600&query=product"}
-                    alt={title}
-                    width={500}
-                    height={500}
-                    className="object-contain w-[500px] h-[500px] bg-white"
-                />
+            {/* Main Image Sticky */}
+            <div className="flex-1 md:relative">
+                <div className="md:sticky md:top-20">
+                    <Image
+                        src={mainImage}
+                        alt={title}
+                        width={500}
+                        height={500}
+                        className="object-contain w-full max-w-full rounded-md h-auto bg-white"
+                    />
+                </div>
             </div>
         </div>
+
     );
 }

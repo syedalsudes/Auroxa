@@ -294,3 +294,41 @@ body {
     min-height: auto;
   }
 }
+
+/* Custom checkbox styling */
+input[type="checkbox"] {
+  /* Remove default appearance */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  /* Size & border */
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--gray300);
+  border-radius: 4px;
+  background-color: var(--background);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Checked state */
+input[type="checkbox"]:checked {
+  background-color: var(--Orange); /* Jo color chahte ho */
+  border-color: var(--Orange);
+}
+
+/* Checkmark */
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--primaryWhite);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+

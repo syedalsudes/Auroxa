@@ -34,7 +34,7 @@ export default function HeroSection() {
             {/* Buttons */}
             <div className="flex flex-col xs:flex-row gap-3 sm:gap-4 justify-center lg:justify-start px-2 sm:px-4 lg:px-0">
               <Link href="/blog">
-                <button className="group bg-primaryWhite text-deepBlack px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-full font-bold text-sm sm:text-base md:text-lg hover:bg-gray100 transition-all duration-300 flex items-center gap-2 justify-center hover:scale-105 w-full xs:w-auto min-w-[140px] sm:min-w-[160px]">
+                <button className="group bg-primaryWhite text-deepBlack px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 rounded-full font-bold text-sm sm:text-base md:text-lg hover:bg-white transition-all duration-300 flex items-center gap-2 justify-center hover:scale-105 w-full xs:w-auto min-w-[140px] sm:min-w-[160px]">
                   <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                   Shop Now
                   <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />

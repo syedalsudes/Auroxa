@@ -184,21 +184,10 @@ const Header = memo(() => {
                 <React.Suspense fallback={<div className="w-6 h-6" />}><ThemeToggle /></React.Suspense>
                 <Link href="/cart" className="relative">
                   <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="glass-button p-3">
-                    <div className="relative">
-                      <ShoppingBag className="w-6 h-6 text-foreground" />
-                      {mounted && totalItems > 0 && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute -top-2 -right-2 bg-Orange text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
-                        >
-                          {totalItems > 99 ? "99+" : totalItems}
-                        </motion.span>
-                      )}
-                    </div>
+                    <ShoppingBag className="w-6 h-6 text-foreground" />
                   </motion.div>
                 </Link>
-                <UserMenu />
+                <UserMenu/>
               </div>
             </>
           )}
@@ -210,22 +199,10 @@ const Header = memo(() => {
                 <React.Suspense fallback={<div className="w-6 h-6" />}><ThemeToggle /></React.Suspense>
                 <Link href="/cart" className="relative">
                   <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="glass-button p-3">
-                    <div className="relative">
-                      <ShoppingBag className="w-6 h-6 text-foreground" />
-                      {mounted && totalItems > 0 && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="absolute -top-2 -right-2 bg-Orange text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
-                        >
-                          {totalItems > 99 ? "99+" : totalItems}
-                        </motion.span>
-                      )}
-                    </div>
+                    <ShoppingBag className="w-6 h-6 text-foreground" />
                   </motion.div>
                 </Link>
-
-                <UserMenu />
+                 <UserMenu/>
               </>
             )}
             {/* MOBILE MENU */}
@@ -295,34 +272,16 @@ const Header = memo(() => {
 
               {/* MOBILE BUTTONS (≤425) */}
               {screenWidth <= 425 && (
-                <div className="flex items-center gap-4 mt-6">
+                <div className="flex flex-col gap-4 mt-6">
                   <React.Suspense fallback={<div className="w-6 h-6" />}><ThemeToggle /></React.Suspense>
-
                   <Link href="/cart" className="relative">
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="glass-button p-3"
-                    >
-                      <div className="relative">
-                        <ShoppingBag className="w-6 h-6 text-foreground" />
-                        {mounted && totalItems > 0 && (
-                          <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="absolute -top-2 -right-2 bg-Orange text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center"
-                          >
-                            {totalItems > 99 ? "99+" : totalItems}
-                          </motion.span>
-                        )}
-                      </div>
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="glass-button p-3 w-full flex justify-center">
+                      <ShoppingBag className="w-6 h-6 text-foreground" />
                     </motion.div>
                   </Link>
-
-                  <UserMenu />
+                   <UserMenu/>
                 </div>
               )}
-
             </div>
           </motion.div>
         )}
