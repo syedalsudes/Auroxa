@@ -92,7 +92,9 @@ export default function CartPage() {
                   {/* Content */}
                   <div className="flex-1 space-y-2">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2">
-                      <h3 className="font-bold text-base md:text-lg text-center md:text-left">{item.title}</h3>
+                      <Link href={`/blog/${item._id}`}>
+                        <h3 className="font-bold text-base md:text-lg text-center md:text-left">{item.title}</h3>
+                      </Link>
                       <p className="font-semibold text-center md:text-right">
                         ${(item.price * item.quantity).toLocaleString()}
                       </p>

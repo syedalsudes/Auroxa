@@ -3,31 +3,23 @@
 import React, { useEffect, useState, memo } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { User, Search, Shield, ShoppingBag, Package, Menu, X } from "lucide-react"
+import { ShoppingBag, Menu, X } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useClerk, UserButton } from "@clerk/nextjs"
 import { useCartStore } from "@/lib/cartStore"
-import { useAuth } from "@/contexts"
 import { useProducts } from "@/contexts"
 import { useRouter } from "next/navigation"
 import UserMenu from "./UserMenu"
+import SearchBar from "./SearchBar"
 
 // Lazy load ThemeToggle
 const ThemeToggle = React.lazy(() => import("./ThemeToggle"))
 
 const Header = memo(() => {
-  const { openSignIn } = useClerk()
-  const { isSignedIn, isLoaded, isAdmin } = useAuth()
-  const { searchProducts, setFilteredProducts } = useProducts()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-
-  // Search states
-  const [searchTerm, setSearchTerm] = useState("")
-  const [searchResults, setSearchResults] = useState<any[]>([])
-  const [showSearchResults, setShowSearchResults] = useState(false)
+  const { searchProducts, setFilteredProducts } = useProducts()
 
   // Screen breakpoints
   const [screenWidth, setScreenWidth] = useState<number>(0)
@@ -47,52 +39,13 @@ const Header = memo(() => {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (searchTerm.trim()) {
-        const results = searchProducts(searchTerm)
-        setSearchResults(results.slice(0, 5))
-        setShowSearchResults(true)
-      } else {
-        setSearchResults([])
-        setShowSearchResults(false)
-      }
-    }, 300)
-    return () => clearTimeout(debounceTimer)
-  }, [searchTerm, searchProducts])
-
-  const handleSearchResultClick = (productId: string) => {
-    setSearchTerm("")
-    setShowSearchResults(false)
-    router.push(`/blog/${productId}`)
+  // Handle global search submit (redirect to /blog with filtered results)
+  // ✅ Sahi
+  const handleSearchSubmit = (term: string) => {
+    const results = searchProducts(term) // ✅ `searchProducts` already destructured above
+    setFilteredProducts(results)
+    router.push("/blog")
   }
-
-  const handleSearchSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault()
-    if (searchTerm.trim()) {
-      const results = searchProducts(searchTerm)
-      setFilteredProducts(results)
-      setSearchTerm("")
-      setShowSearchResults(false)
-      router.push("/blog")
-    }
-  }
-
-  const handleSearchKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSearchSubmit()
-    else if (e.key === "Escape") {
-      setSearchTerm("")
-      setShowSearchResults(false)
-    }
-  }
-
-  useEffect(() => {
-    const handleClickOutside = () => setShowSearchResults(false)
-    if (showSearchResults) {
-      document.addEventListener("click", handleClickOutside)
-      return () => document.removeEventListener("click", handleClickOutside)
-    }
-  }, [showSearchResults])
 
   const navLinks = [
     { href: "/blog", label: "Products" },
@@ -101,89 +54,55 @@ const Header = memo(() => {
     { href: "/services", label: "Services" },
   ]
 
-
   return (
     <header>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-20 min-h-[80px]">
           {/* LOGO */}
           <Link href="/" className="flex items-center flex-shrink-0">
-            <Image src="/mainlogo.svg" alt="Auroxa logo" width={200} height={60} priority className="h-10 sm:h-12 md:h-14 w-auto min-w-[100px] object-contain select-none pointer-events-none" />
+            <Image
+              src="/mainlogo.svg"
+              alt="Auroxa logo"
+              width={200}
+              height={60}
+              priority
+              className="h-10 sm:h-12 md:h-14 w-auto min-w-[100px] object-contain select-none pointer-events-none"
+            />
           </Link>
 
           {/* DESKTOP NAVIGATION (≥769px) */}
           {screenWidth >= 769 && (
             <>
-              <nav className="flex items-center gap-8">
+              <nav className="flex items-center gap-6">
                 {navLinks.map((link) => (
-                  <Link key={link.href} href={link.href} className="text-foreground hover:text-Orange transition-colors font-medium relative group">
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-foreground hover:text-Orange transition-colors font-medium relative group whitespace-nowrap"
+                  >
                     {link.label}
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-Orange transition-all duration-300 group-hover:w-full" />
                   </Link>
                 ))}
               </nav>
-              {/* desktop serch */}
-              <div
-                className="hidden md:flex items-center gap-3 z-[29] glass rounded-full px-4 py-2 w-[350px] relative"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Search className="w-5 h-5 text-gray500" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={handleSearchKeyPress}
-                  placeholder="Search products..."
-                  className="flex-1 min-w-0 bg-transparent outline-none text-foreground placeholder-gray500"
-                />
 
-                {searchTerm && (
-                  <button
-                    onClick={() => {
-                      setSearchTerm("")
-                      setShowSearchResults(false)
-                    }}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 text-gray500 hover:bg-gray300 rounded-full h-10 w-10 font-bold text-lg"
-                  >
-                    <X className="ml-2" />
-                  </button>
-                )}
+              {/* Adjust SearchBar width based on screen */}
+              <SearchBar
+                onSearchSubmit={handleSearchSubmit}
+                className={screenWidth >= 1024 ? "w-[350px]" : "w-[250px]"}
+                placeholder="Search products..."
+              />
 
-                {showSearchResults && searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-gray300 rounded-lg shadow-lg z-[9999] max-h-80 overflow-y-auto">
-                    {searchResults.map((product) => (
-                      <div
-                        key={product._id}
-                        onClick={() => handleSearchResultClick(product._id)}
-                        className="flex items-center gap-3 p-3 hover:bg-lightGray cursor-pointer border-b border-gray200 last:border-b-0"
-                      >
-                        <img
-                          src={product.images?.[0] || "/placeholder.svg?height=40&width=40"}
-                          alt={product.title}
-                          className="w-10 h-10 object-cover rounded-lg"
-                        />
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground text-sm">{product.title}</p>
-                          <p className="text-xs text-gray500">{product.category}</p>
-                        </div>
-                        <p className="font-semibold text-Orange text-sm">${product.price}</p>
-                      </div>
-                    ))}
-                    {searchTerm && (
-                      <div
-                        onClick={handleSearchSubmit}
-                        className="p-3 text-center text-blue-600 hover:bg-lightGray cursor-pointer font-medium border-t border-gray200"
-                      >
-                        View all results for "{searchTerm}"
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-4 w-[180px]">
-                <React.Suspense fallback={<div className="w-6 h-6" />}><ThemeToggle /></React.Suspense>
+              <div className="flex items-center gap-3 min-w-[160px] justify-end">
+                <React.Suspense fallback={<div className="w-6 h-6" />}>
+                  <ThemeToggle />
+                </React.Suspense>
                 <Link href="/cart" className="relative">
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="glass-button p-3">
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="glass-button p-3"
+                  >
                     <div className="relative">
                       <ShoppingBag className="w-6 h-6 text-foreground" />
                       {mounted && totalItems > 0 && (
@@ -203,13 +122,19 @@ const Header = memo(() => {
             </>
           )}
 
-          {/* ACTION BUTTONS (≥426px) */}
+          {/* ACTION BUTTONS (≥426px and <769px) */}
           <div className="flex items-center gap-4">
-            {(screenWidth >= 426) && (screenWidth < 769) && (
+            {screenWidth >= 426 && screenWidth < 769 && (
               <>
-                <React.Suspense fallback={<div className="w-6 h-6" />}><ThemeToggle /></React.Suspense>
+                <React.Suspense fallback={<div className="w-6 h-6" />}>
+                  <ThemeToggle />
+                </React.Suspense>
                 <Link href="/cart" className="relative">
-                  <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="glass-button p-3">
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="glass-button p-3"
+                  >
                     <div className="relative">
                       <ShoppingBag className="w-6 h-6 text-foreground" />
                       {mounted && totalItems > 0 && (
@@ -224,79 +149,63 @@ const Header = memo(() => {
                     </div>
                   </motion.div>
                 </Link>
-
                 <UserMenu />
               </>
             )}
-            {/* MOBILE MENU */}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden glass-button p-3">
-              {mobileMenuOpen ? <X className="w-6 h-6 text-foreground" /> : <Menu className="w-6 h-6 text-foreground" />}
+
+            {/* MOBILE MENU TOGGLE */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden glass-button p-3"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6 text-foreground" />
+              ) : (
+                <Menu className="w-6 h-6 text-foreground" />
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* MOBILE MENU (≤768) */}
+      {/* MOBILE MENU (≤768px) */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} className="lg:hidden glass border-t border-glass-border">
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="lg:hidden glass border-t border-glass-border"
+          >
             <div className="max-w-7xl mx-auto px-4 py-6">
-              {/* MOBILE SEARCH */}
-              <div className="relative flex items-center gap-3 glass rounded-full px-4 py-3 mb-6">
-                <Search className="w-5 h-5 text-gray500" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={handleSearchKeyPress}
-                  placeholder="Search products..."
-                  className="flex-1 min-w-0 bg-transparent outline-none text-foreground placeholder-gray500"
-                />
-                {searchTerm && (
-                  <button
-                    onClick={() => { setSearchTerm(""); setShowSearchResults(false) }}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 text-gray500 hover:bg-gray300 rounded-full h-10 w-10 flex items-center justify-center"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                )}
-
-                {/* Mobile search results */}
-                {showSearchResults && searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-gray300 rounded-lg shadow-lg z-[9999] max-h-80 overflow-y-auto">
-                    {searchResults.map((product) => (
-                      <div key={product._id} onClick={() => handleSearchResultClick(product._id)} className="flex items-center gap-3 p-3 hover:bg-lightGray cursor-pointer border-b border-gray200 last:border-b-0">
-                        <img src={product.images?.[0] || "/placeholder.svg?height=40&width=40"} alt={product.title} className="w-10 h-10 object-cover rounded-lg" />
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground text-sm">{product.title}</p>
-                          <p className="text-xs text-gray500">{product.category}</p>
-                        </div>
-                        <p className="font-semibold text-Orange text-sm">${product.price}</p>
-                      </div>
-                    ))}
-                    {searchTerm && (
-                      <div onClick={handleSearchSubmit} className="p-3 text-center text-blue-600 hover:bg-lightGray cursor-pointer font-medium border-t border-gray200">
-                        View all results for "{searchTerm}"
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
+              {/* ✅ MOBILE SEARCH - Replaced with component */}
+              <SearchBar
+                onSearchSubmit={handleSearchSubmit}
+                className="mb-6"
+                placeholder="Search products..."
+              />
 
               {/* NAVIGATION */}
               <nav className="space-y-4">
                 {navLinks.map((link) => (
-                  <Link key={link.href} href={link.href} onClick={() => setMobileMenuOpen(false)} className="block text-foreground hover:text-Orange transition-colors font-medium py-2">
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block text-foreground hover:text-Orange transition-colors font-medium py-2"
+                  >
                     {link.label}
                   </Link>
                 ))}
               </nav>
 
-              {/* MOBILE BUTTONS (≤425) */}
+              {/* MOBILE BUTTONS (≤425px) */}
               {screenWidth <= 425 && (
                 <div className="flex items-center gap-4 mt-6">
-                  <React.Suspense fallback={<div className="w-6 h-6" />}><ThemeToggle /></React.Suspense>
+                  <React.Suspense fallback={<div className="w-6 h-6" />}>
+                    <ThemeToggle />
+                  </React.Suspense>
 
                   <Link href="/cart" className="relative">
                     <motion.div
@@ -322,7 +231,6 @@ const Header = memo(() => {
                   <UserMenu />
                 </div>
               )}
-
             </div>
           </motion.div>
         )}
