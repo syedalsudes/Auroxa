@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
+import Script from "next/script"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ToastProvider } from "@/components/ToastContainer"
 import { AuthProvider, ProductsProvider } from "@/contexts"
@@ -8,6 +9,7 @@ import React from "react"
 import GlobalLoader from "@/components/GlobalLoader"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
+import ThemeProvider from "@/components/ThemeProvider"
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -116,7 +118,6 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
         <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
           <meta name="theme-color" content="#FF6B35" />
           <meta name="color-scheme" content="light dark" />
           <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -150,20 +151,22 @@ export default function RootLayout({
           />
         </head>
         <body className="antialiased">
-          <AuthProvider>
-            <ToastProvider>
-              <ProductsProvider>
-                <GlobalLoader />
-                <React.Suspense fallback={<div className="h-24 bg-background animate-pulse" />}>
-                  <Header />
-                </React.Suspense>
-                <main id="main-content">{children}</main>
-                <React.Suspense fallback={<div className="h-64 bg-background animate-pulse" />}>
-                  <Footer />
-                </React.Suspense>
-              </ProductsProvider>
-            </ToastProvider>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <ProductsProvider>
+                  <GlobalLoader />
+                  <React.Suspense fallback={<div className="h-24 bg-background animate-pulse" />}>
+                    <Header />
+                  </React.Suspense>
+                  <main id="main-content">{children}</main>
+                  <React.Suspense fallback={<div className="h-64 bg-background animate-pulse" />}>
+                    <Footer />
+                  </React.Suspense>
+                </ProductsProvider>
+              </ToastProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
