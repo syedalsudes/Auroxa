@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
-import Script from "next/script"
 import { ClerkProvider } from "@clerk/nextjs"
 import { ToastProvider } from "@/components/ToastContainer"
 import { AuthProvider, ProductsProvider } from "@/contexts"
@@ -49,17 +48,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Syed Al-Sudes Hussain" }],
   creator: "Syed Al-Sudes Hussain",
   publisher: "Auroxa",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
-  },
+  robots: { index: true, follow: true },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -89,31 +78,12 @@ export const metadata: Metadata = {
     shortcut: "/auroxaicon.svg",
     apple: "/auroxaicon.svg",
   },
-  manifest: "/manifest.json",
   category: "e-commerce",
-  classification: "Fashion & Lifestyle E-Commerce",
   referrer: "origin-when-cross-origin",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
   metadataBase: new URL(baseUrl),
-  alternates: {
-    canonical: baseUrl,
-  },
-  verification: {
-    google: "your-google-verification-code",
-    yandex: "your-yandex-verification-code",
-    yahoo: "your-yahoo-verification-code",
-  },
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider>
       <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
@@ -124,7 +94,6 @@ export default function RootLayout({
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
           <link rel="dns-prefetch" href="//images.unsplash.com" />
           <link rel="dns-prefetch" href="//api.clerk.dev" />
-
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
