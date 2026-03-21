@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const ContactMessageSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
+  userId: { type: String, default: null, required: false }, 
   name: { type: String, required: true },
   email: { type: String, required: true },
   subject: { type: String, required: true },
@@ -10,5 +10,7 @@ const ContactMessageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-export default mongoose.models.ContactMessage ||
-  mongoose.model("ContactMessage", ContactMessageSchema);
+
+const ContactMessage = mongoose.models.ContactMessage || mongoose.model("ContactMessage", ContactMessageSchema);
+
+export default ContactMessage;
