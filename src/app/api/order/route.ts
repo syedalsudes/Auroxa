@@ -1,46 +1,31 @@
-import { NextResponse } from "next/server"
-import { connectToDB } from "@/lib/mongodb"
-import { Order } from "@/models/Order"
-import { currentUser } from "@clerk/nextjs/server"
+import { NextResponse } from "next/server";
+import { connectToDB } from "@/lib/mongodb";
+import { Order } from "@/models/Order";
+import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
+
 
 export async function POST(req: Request) {
   try {
-
-    const user = await currentUser()
-
-    if (!user) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    await connectToDB()
+    await connectToDB();
+    const orderData = await req.json();
 
-    const orderData = await req.json()
-
-    const requiredFields = ["items", "shippingAddress", "subtotal", "total"]
-    const missingFields = requiredFields.filter((field) => !orderData[field])
-
+    const requiredFields = ["items", "shippingAddress", "subtotal", "total"];
+    const missingFields = requiredFields.filter((field) => !orderData[field]);
     if (missingFields.length > 0) {
-      return NextResponse.json(
-        { success: false, message: `Missing required fields: ${missingFields.join(", ")}` },
-        { status: 400 },
-      )
-    }
-
-    const requiredAddressFields = ["fullName", "phone", "address", "city", "state", "zipCode", "country"]
-    const missingAddressFields = requiredAddressFields.filter((field) => !orderData.shippingAddress[field])
-
-    if (missingAddressFields.length > 0) {
-      return NextResponse.json(
-        { success: false, message: `Missing address fields: ${missingAddressFields.join(", ")}` },
-        { status: 400 },
-      )
+      return NextResponse.json({ success: false, message: `Missing fields: ${missingFields.join(", ")}` }, { status: 400 });
     }
 
     const newOrderData = {
       user: {
-        id: user.id,
-        name: orderData.user?.name || user.fullName || "Unknown",
-        email: orderData.user?.email || user.primaryEmailAddress?.emailAddress || "unknown@email.com",
+        id: userId,
+        name: orderData.user?.name || "Guest User",
+        email: orderData.user?.email || "No Email",
       },
       items: orderData.items.map((item: any) => ({
         productId: item.productId,
@@ -48,8 +33,8 @@ export async function POST(req: Request) {
         quantity: item.quantity,
         price: item.price,
         image: item.image,
-        color: item.color || "", // ✅ include color
-        size: item.size || "",   // ✅ include size
+        color: item.color || "", 
+        size: item.size || "",   
       })),
       shippingAddress: orderData.shippingAddress,
       paymentMethod: orderData.paymentMethod || "cod",
@@ -58,69 +43,57 @@ export async function POST(req: Request) {
       deliveryFee: Number(orderData.deliveryFee || 0),
       total: Number(orderData.total),
       status: "pending",
-    }
+    };
 
+    revalidatePath("/admin/orders"); 
+    revalidatePath("/my-orders");
 
-
-    const newOrder = new Order(newOrderData)
-    const savedOrder = await newOrder.save()
-
-
-    // Ensure we return the ID as a string
-    const orderIdString = savedOrder._id.toString()
+    const savedOrder = await Order.create(newOrderData);
 
     return NextResponse.json({
       success: true,
       message: "Order placed successfully",
-      orderId: orderIdString,
+      orderId: savedOrder._id.toString(),
       orderNumber: savedOrder.orderNumber,
-      debug: {
-        originalId: savedOrder._id,
-        stringId: orderIdString,
-        idLength: orderIdString.length,
-        idType: typeof orderIdString,
-      },
-    })
+    });
+
   } catch (error: any) {
-    console.error("❌ Order creation error:", error)
-
-    // More detailed error logging
-    if (error.name === "ValidationError") {
-      console.error("Validation Error Details:", error.errors)
-      return NextResponse.json({ success: false, message: `Validation Error: ${error.message}` }, { status: 400 })
-    }
-
-    if (error.name === "MongoError" || error.name === "MongoServerError") {
-      console.error("MongoDB Error:", error.message)
-      return NextResponse.json({ success: false, message: `Database Error: ${error.message}` }, { status: 500 })
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to create order",
-        error: error.message,
-        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-      },
-      { status: 500 },
-    )
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
 
 export async function GET() {
   try {
-    await connectToDB()
-    const orders = await Order.find().sort({ createdAt: -1 })
-    return NextResponse.json({ success: true, orders })
-  } catch (error: any) {
-    console.error("Error fetching orders:", error)
+    // Parallel mein auth aur DB connect karne ki koshish karein
+    const [authData, _] = await Promise.all([
+      auth(),
+      connectToDB()
+    ]);
+
+    const { userId } = authData;
+    const adminIds = process.env.NEXT_PUBLIC_ADMIN_IDS?.split(",") || [];
+    
+    if (!userId || !adminIds.includes(userId)) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    }
+
+    // Lean query fast hoti hai, lekin indexing lazmi hai
+    const orders = await Order.find({})
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean()
+      .exec(); // exec() use karna better practice hai
+
     return NextResponse.json(
+      { success: true, orders },
       {
-        success: false,
-        message: "Failed to fetch orders",
-        error: error.message,
-      },
-      { status: 500 },
-    )
+        headers: {
+          'Cache-Control': 'no-store, max-age=0', // Browser ko cache karne se rokein
+        },
+      }
+    );
+  } catch (error: any) {
+    console.error("GET ORDERS ERROR:", error);
+    return NextResponse.json({ success: false, message: "Failed to fetch orders" }, { status: 500 });
   }
 }

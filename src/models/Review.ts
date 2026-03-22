@@ -13,4 +13,6 @@ const ReviewSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+ReviewSchema.index({ productId: 1 }); 
+
 export const Review = models.Review || model("Review", ReviewSchema);

@@ -1,4 +1,3 @@
-// src/app/api/contact/route.ts
 import { connectToDB } from "@/lib/mongodb";
 import ContactMessage from "@/models/ContactMessage";
 import { auth } from "@clerk/nextjs/server";
@@ -62,7 +61,6 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error("Fetch Error:", error);
     return new Response("Server error", { status: 500 });
   }
 }

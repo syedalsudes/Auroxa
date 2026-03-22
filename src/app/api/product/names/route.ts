@@ -6,7 +6,6 @@ export async function GET() {
   try {
     await connectToDB();
 
-    // Sirf 10 products ke name aur _id lao
     const products = await Product.find({})
       .limit(10)
 

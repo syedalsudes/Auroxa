@@ -1,50 +1,54 @@
-import { NextResponse } from "next/server"
-import { getEmailTemplate, sendEmail } from "@/lib/emailService"
+import { NextResponse } from "next/server";
+import { connectToDB } from "@/lib/mongodb";
+import { Order } from "@/models/Order";
+import { getEmailTemplate, sendEmail } from "@/lib/emailService";
+import { auth } from "@clerk/nextjs/server"; 
 
 export async function POST(req: Request) {
   try {
-    const { orderData, status } = await req.json()
-
-    if (!orderData || !status) {
-      return NextResponse.json({ success: false, message: "Order data and status are required" }, { status: 400 })
+    const { userId } = await auth();
+    const adminIds = process.env.NEXT_PUBLIC_ADMIN_IDS?.split(",") || [];
+    
+    if (!userId || !adminIds.includes(userId)) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const emailTemplate = getEmailTemplate(status, orderData)
+    const { orderId, status } = await req.json();
+
+    if (!orderId || !status) {
+      return NextResponse.json({ success: false, message: "Order ID and status are required" }, { status: 400 });
+    }
+
+    await connectToDB();
+
+    const orderData = (await Order.findById(orderId).lean()) as any;
+
+    if (!orderData) {
+      return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });
+    }
+
+    const emailTemplate = getEmailTemplate(status, orderData);
     if (!emailTemplate) {
-      return NextResponse.json({ success: false, message: "Invalid status for email" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Invalid status for email" }, { status: 400 });
     }
 
-    // Send real email
-    const emailResult = await sendEmail(orderData.user.email, emailTemplate.subject, emailTemplate.html)
+    const emailResult = await sendEmail(orderData.user.email, emailTemplate.subject, emailTemplate.html);
 
     if (emailResult.success) {
-
       return NextResponse.json({
         success: true,
-        message: `Shipping email sent successfully to ${orderData.user.email}`,
+        message: `Email sent to ${orderData.user.email}`,
         emailSent: true,
-        messageId: emailResult.messageId,
-      })
+      });
     } else {
-      console.error("❌ Shipping email sending failed:", emailResult.error)
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Failed to send shipping email",
-          error: emailResult.error,
-        },
-        { status: 500 },
-      )
+      throw new Error(emailResult.error);
     }
+
   } catch (error: any) {
-    console.error("❌ Shipping Email API Error:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to send shipping email",
-        error: error.message,
-      },
-      { status: 500 },
-    )
+    return NextResponse.json({ 
+      success: false, 
+      message: "Failed to send email", 
+      error: error.message 
+    }, { status: 500 });
   }
 }

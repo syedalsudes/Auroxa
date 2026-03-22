@@ -1,8 +1,7 @@
-// src/app/api/upload/route.ts
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
+import { auth } from "@clerk/nextjs/server";
 
-// configure cloudinary from env
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -11,8 +10,13 @@ cloudinary.config({
 
 export async function POST(req: Request) {
   try {
+    const { userId } = await auth();
+    const adminIds = process.env.NEXT_PUBLIC_ADMIN_IDS?.split(",") || [];
+    if (!userId || !adminIds.includes(userId)) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await req.formData();
-    // 'images' fields (multiple)
     const files = formData.getAll("images") as File[];
 
     if (!files || files.length === 0) {
@@ -23,35 +27,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Max 4 images allowed" }, { status: 400 });
     }
 
-    const uploaded: string[] = [];
-
-    for (const file of files) {
-      // file is a Web File object - convert to base64 data URI
-      // @ts-ignore
-      const arrayBuffer = await file.arrayBuffer(); 
-      const buffer = Buffer.from(arrayBuffer);
-      const base64 = buffer.toString("base64");
-      // file.type should be like "image/png"
-      // @ts-ignore
-      const dataUri = `data:${file.type};base64,${base64}`;
-
-      // optional: limit file size (e.g., 6MB)
-      // @ts-ignore
-      if (file.size && file.size > 6 * 1024 * 1024) {
-        return NextResponse.json({ success: false, error: "Each file must be <= 6MB" }, { status: 400 });
+    const uploadPromises = files.map(async (file) => {
+      if (file.size > 6 * 1024 * 1024) {
+        throw new Error(`File ${file.name} is too large (> 6MB)`);
       }
 
-      const result = await cloudinary.uploader.upload(dataUri, {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64 = buffer.toString("base64");
+      const dataUri = `data:${file.type};base64,${base64}`;
+
+      return cloudinary.uploader.upload(dataUri, {
         folder: "products",
         resource_type: "image",
       });
+    });
 
-      uploaded.push(result.secure_url);
-    }
+    const results = await Promise.all(uploadPromises);
+    const uploadedUrls = results.map((result) => result.secure_url);
 
-    return NextResponse.json({ success: true, uploaded });
-  } catch (err) {
+    return NextResponse.json({ success: true, uploaded: uploadedUrls });
+
+  } catch (err: any) {
     console.error("Upload error:", err);
-    return NextResponse.json({ success: false, error: "Upload failed" }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: err.message || "Upload failed" 
+    }, { status: 500 });
   }
 }

@@ -10,7 +10,7 @@ export default function OrdersPage() {
   const { user, isLoaded, isAdmin, redirectIfNotAdmin } = useAuth()
 
   const {
-    orders, // 🔥 SIMPLIFIED: Only active orders
+    orders,
     loading,
     updatingStatus,
     sendingEmail,

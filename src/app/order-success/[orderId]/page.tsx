@@ -1,24 +1,17 @@
 import { CheckCircle, Package, Truck, MapPin, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { connectToDB } from "@/lib/mongodb"
+import { Order } from "@/models/Order"
+import mongoose from "mongoose"
 
-async function getOrder(orderId: string) {
+async function getOrderDirectly(orderId: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-    const res = await fetch(`${baseUrl}/api/order/${orderId}`, {
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-
-    if (!res.ok) {
-      return null
-    }
-
-    const data = await res.json()
-    return data.success ? data.order : null
+    await connectToDB();
+    const order = await Order.findById(orderId).lean();
+    return order;
   } catch (error) {
-    return null
+    console.error("DB Fetch Error:", error);
+    return null;
   }
 }
 
@@ -27,52 +20,15 @@ interface PageProps {
 }
 
 export default async function OrderSuccessPage({ params }: PageProps) {
-  let resolvedParams
-  try {
-    resolvedParams = await params
-  } catch (error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error Loading Order</h1>
-          <p className="text-gray600 mb-4">Unable to load order parameters</p>
-          <Link href="/blog" className="bg-deepBlack text-primaryWhite px-6 py-3 rounded-full">
-            Continue Shopping
-          </Link>
-        </div>
-      </div>
-    )
+  const { orderId } = await params;
+
+  // 1. Validation
+  if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+    return <div className="text-center py-20">Invalid Order ID</div>;
   }
 
-  const orderId = resolvedParams.orderId
+  const order = (await getOrderDirectly(orderId)) as any;
 
-  if (
-    !orderId ||
-    typeof orderId !== "string" ||
-    orderId === "undefined" ||
-    orderId === "null" ||
-    orderId.trim() === ""
-  ) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Invalid Order ID</h1>
-          <p className="text-gray600 mb-4">The order ID provided is not valid</p>
-          <p className="text-sm text-gray500 mb-4">Please check your order confirmation email</p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/blog" className="bg-deepBlack text-primaryWhite px-6 py-3 rounded-full">
-              Continue Shopping
-            </Link>
-            <Link href="/my-orders" className="border border-gray400 text-foreground px-6 py-3 rounded-full">
-              View All Orders
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const order = await getOrder(orderId)
 
   if (!order) {
     return (
